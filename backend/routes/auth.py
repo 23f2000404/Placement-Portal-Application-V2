@@ -1,0 +1,96 @@
+from flask import Blueprint, request, jsonify
+from flask_login import login_user, logout_user, login_required, current_user
+
+from extensions import db, cache
+from models import User, CompanyProfile, StudentProfile
+
+auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
+
+
+@auth_bp.post("/register")
+def register():
+    data = request.get_json(force=True) or {}
+    role = data.get("role")
+    username = (data.get("username") or "").strip()
+    password = data.get("password") or ""
+    email = (data.get("email") or "").strip()
+
+    if role not in ("student", "company"):
+        return jsonify({"error": "role must be 'student' or 'company'"}), 400
+    if not username or not password:
+        return jsonify({"error": "username and password are required"}), 400
+    if User.query.filter_by(username=username).first():
+        return jsonify({"error": "username already taken"}), 409
+
+    user = User(username=username, email=email, role=role)
+    user.set_password(password)
+    db.session.add(user)
+    db.session.flush()  #assigning a new user.id before we commit
+
+    if role == "student":
+        name = data.get("name") or username
+        profile = StudentProfile(
+            user_id=user.id,
+            name=name,
+            department=data.get("department"),
+            skills=data.get("skills"),
+            cgpa=float(data.get("cgpa") or 0),
+            year=int(data.get("year")) if data.get("year") else None,
+            phone=data.get("phone"),
+        )
+        db.session.add(profile)
+    else:
+        profile = CompanyProfile(
+            user_id=user.id,
+            company_name=data.get("company_name") or username,
+            industry=data.get("industry"),
+            hr_contact=data.get("hr_contact"),
+            hr_email=data.get("hr_email"),
+            website=data.get("website"),
+            location=data.get("location"),
+            description=data.get("description"),
+            approval_status="pending",
+        )
+        db.session.add(profile)
+
+    db.session.commit()
+    cache.delete("admin_dashboard_stats")
+    return jsonify({"message": "Registered successfully.",
+                     "user": user.to_dict()}), 201
+
+
+@auth_bp.post("/login")
+def login():
+    data = request.get_json(force=True) or {}
+    username = (data.get("username") or "").strip()
+    password = data.get("password") or ""
+
+    user = User.query.filter_by(username=username).first()
+    if not user or not user.check_password(password):
+        return jsonify({"error": "Invalid credentials"}), 401
+    if user.is_blacklisted or not user.is_active_flag:
+        return jsonify({"error": "Account is inactive"}), 403
+
+    login_user(user)
+    return jsonify({"message": "Logged in successfully", "user": _user_payload(user)})
+
+@auth_bp.post("/logout")
+@login_required
+def logout():
+    logout_user()
+    return jsonify({"message": "Logged out successfully"})
+
+
+@auth_bp.get("/me")
+@login_required
+def me():
+    return jsonify({"user": _user_payload(current_user)})
+
+
+def _user_payload(user):
+    payload = user.to_dict()
+    if user.role == "student" and user.student_profile:
+        payload["profile"] = user.student_profile.to_dict()
+    elif user.role == "company" and user.company_profile:
+        payload["profile"] = user.company_profile.to_dict()
+    return payload

@@ -28,6 +28,25 @@ def register():
     db.session.flush()  #assigning a new user.id before we commit
 
     if role == "student":
+        name = (data.get("name") or "").strip()
+        department = (data.get("department") or "").strip()
+        phone = (data.get("phone") or "").strip()
+
+        if not name or not department or not phone:
+            return jsonify({"error": "Name, department and phone num are required"}), 400
+
+        if data.get("cgpa") in (None, "") or data.get("year") in (None, ""):
+            return jsonify({"error": "CGPA and graduation year are required"}), 400
+
+        profile = StudentProfile(
+            user_id=user.id,
+            name=name,
+            department=department,
+            skills=(data.get("skills") or "").strip(),
+            cgpa=float(data["cgpa"]),
+            year=int(data["year"]),
+            phone=phone,
+        )        
         name = data.get("name") or username
         profile = StudentProfile(
             user_id=user.id,
@@ -40,6 +59,15 @@ def register():
         )
         db.session.add(profile)
     else:
+        company_name = (data.get("company_name") or "").strip()
+        industry = (data.get("industry") or "").strip()
+        hr_contact = (data.get("hr_contact") or "").strip()
+        hr_email = (data.get("hr_email") or "").strip()
+        location = (data.get("location") or "").strip()
+
+        if not all([company_name, industry, hr_contact, hr_email, location]):
+            return jsonify({"error": "All company details are required (excluding website and description)"}), 400
+
         profile = CompanyProfile(
             user_id=user.id,
             company_name=data.get("company_name") or username,
@@ -71,7 +99,7 @@ def login():
     if user.is_blacklisted or not user.is_active_flag:
         return jsonify({"error": "Account is inactive"}), 403
 
-    login_user(user)
+    login_user(user,remember=True)
     return jsonify({"message": "Logged in successfully", "user": _user_payload(user)})
 
 @auth_bp.post("/logout")

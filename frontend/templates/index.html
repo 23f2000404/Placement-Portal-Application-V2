@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Placement Portal</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+
+<body>
+
+  <!-- Jinja's for entry, rest's rendering by Vue -->
+  <div id="app"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.4.31/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue-router@4.4.0/dist/vue-router.global.min.js"></script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+  
+  <script src="{{ url_for('static', filename='js/components/Navbar.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/components/Login.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/components/Register.js') }}"></script>
+
+  <script src="{{ url_for('static', filename='js/components/AdminDashboard.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/components/CompanyDashboard.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/components/CreateDrive.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/components/DriveApplications.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/components/StudentDashboard.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/components/DriveDetail.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/components/StudentProfile.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/components/StudentHistory.js') }}"></script>
+
+  <script src="{{ url_for('static', filename='js/router.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

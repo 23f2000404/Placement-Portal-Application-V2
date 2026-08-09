@@ -16,11 +16,11 @@ def register():
     email = (data.get("email") or "").strip()
 
     if role not in ("student", "company"):
-        return jsonify({"error": "role must be 'student' or 'company'"}), 400
+        return jsonify({"error": "Role must be either 'Student' or 'Company'"}), 400
     if not username or not password:
-        return jsonify({"error": "username and password are required"}), 400
+        return jsonify({"error": "Username and Password are required"}), 400
     if User.query.filter_by(username=username).first():
-        return jsonify({"error": "username already taken"}), 409
+        return jsonify({"error": "Oops! Username is already taken.."}), 409
 
     user = User(username=username, email=email, role=role)
     user.set_password(password)

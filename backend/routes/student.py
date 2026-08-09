@@ -43,21 +43,21 @@ def update_profile():
 def upload_resume():
     student = _get_student_or_404()
     if "resume" not in request.files:
-        return jsonify({"error": "no file part named 'resume'"}), 400
+        return jsonify({"error": "No file part named 'resume'"}), 400
     file = request.files["resume"]
     if file.filename == "":
-        return jsonify({"error": "no file selected"}), 400
+        return jsonify({"error": "No file selected"}), 400
 
     ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
     if ext not in current_app.config["ALLOWED_RESUME_EXTENSIONS"]:
-        return jsonify({"error": "only PDF, DOC, or DOCX files are allowed"}), 400
+        return jsonify({"error": "Only PDF, DOC, or DOCX files are allowed"}), 400
 
     filename = secure_filename(f"student_{student.id}_{file.filename}")
     filepath = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
     file.save(filepath)
     student.resume_filename = filename
     db.session.commit()
-    return jsonify({"message": "resume uploaded", "resume_filename": filename})
+    return jsonify({"message": "Resume has been uploaded.", "resume_filename": filename})
 
 @student_bp.get("/profile/resume")
 @login_required
@@ -65,7 +65,7 @@ def upload_resume():
 def download_own_resume():
     student = _get_student_or_404()
     if not student.resume_filename:
-        return jsonify({"error": "no resume uploaded"}), 404
+        return jsonify({"error": "No resume uploaded"}), 404
     return send_from_directory(current_app.config["UPLOAD_FOLDER"], student.resume_filename, as_attachment=True)
 
 @student_bp.get("/drives")
@@ -124,30 +124,26 @@ def apply_to_drive(drive_id):
     drive = PlacementDrive.query.get_or_404(drive_id)
 
     if drive.status != "approved":
-        return jsonify({"error": "this drive is not open for applications"}), 400
+        return jsonify({"error": "This drive is not open for applications"}), 400
 
     existing = Application.query.filter_by(student_id=student.id, drive_id=drive.id).first()
     if existing:
-        return jsonify({"error": "you have already applied to this drive"}), 409
+        return jsonify({"error": "You have already applied to this drive"}), 409
 
     if not _is_eligible(student, drive):
-        return jsonify({"error": "you do not meet the eligibility criteria for this drive"}), 403
+        return jsonify({"error": "You do not meet the eligibility criteria for this drive"}), 403
+
     
     from sqlalchemy.exc import IntegrityError
     application = Application(student_id=student.id, drive_id=drive.id, status="applied")
     db.session.add(application)
+
     try:
         db.session.commit()
     except IntegrityError:
         db.session.rollback()
-        return jsonify({"error": "you have already applied to this drive"}), 409
-    return jsonify({"message": "application submitted", "application": application.to_dict()}), 201
-
-    # application = Application(student_id=student.id, drive_id=drive.id, status="applied")
-    # db.session.add(application)
-    # db.session.commit()
-    # return jsonify({"message": "application submitted", "application": application.to_dict()}), 201
-
+        return jsonify({"error": "You have already applied to this drive"}), 409
+    return jsonify({"message": "Application got submitted", "application": application.to_dict()}), 201
 
 @student_bp.get("/applications")
 @login_required
@@ -188,7 +184,7 @@ def download_offer_letter(application_id):
     application = Application.query.filter_by(id=application_id, student_id=student.id).first_or_404()
 
     if application.status not in ("offer", "placed"):
-        return jsonify({"error": "no offer/placement confirmation available for this application yet"}), 400
+        return jsonify({"error": "No offer/placement confirmation available for this application yet"}), 400
 
     drive = application.drive
     company = drive.company

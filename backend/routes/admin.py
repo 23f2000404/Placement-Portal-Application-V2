@@ -42,7 +42,7 @@ def approve_company(company_id):
     db.session.commit()
     cache.delete("admin_dashboard_stats")
     cache.clear()  #could cause production issues, usme we gotta specify which keys
-    return jsonify({"message": "company approved", "company": company.to_dict()})
+    return jsonify({"message": "Company was approved", "company": company.to_dict()})
 
 
 @admin_bp.post("/companies/<int:company_id>/reject")
@@ -54,7 +54,7 @@ def reject_company(company_id):
     db.session.commit()
     cache.delete("admin_dashboard_stats")
     cache.clear()
-    return jsonify({"message": "company rejected", "company": company.to_dict()})
+    return jsonify({"message": "Company was rejected", "company": company.to_dict()})
 
 
 @admin_bp.post("/companies/<int:company_id>/blacklist")
@@ -71,7 +71,7 @@ def blacklist_company(company_id):
     db.session.commit()
     cache.delete("admin_dashboard_stats")
     cache.clear()
-    return jsonify({"message": "toggled blacklist", "is_blacklisted": user.is_blacklisted})
+    return jsonify({"message": "Company is blacklisted", "is_blacklisted": user.is_blacklisted})
 
 
 @admin_bp.get("/companies/<int:company_id>")
@@ -100,7 +100,7 @@ def blacklist_student(student_id):
     db.session.commit()
     cache.delete("admin_dashboard_stats")
     cache.clear()
-    return jsonify({"message": "toggled blacklist", "is_blacklisted": user.is_blacklisted})
+    return jsonify({"message": "Student is blacklisted", "is_blacklisted": user.is_blacklisted})
 
 
 @admin_bp.get("/students/<int:student_id>")
@@ -129,7 +129,7 @@ def approve_drive(drive_id):
     cache.delete("admin_dashboard_stats")
     cache.clear()
     cache.delete("approved_drives_list")
-    return jsonify({"message": "drive approved", "drive": drive.to_dict()})
+    return jsonify({"message": "Drive was approved!", "drive": drive.to_dict()})
 
 
 @admin_bp.post("/drives/<int:drive_id>/reject")
@@ -141,7 +141,7 @@ def reject_drive(drive_id):
     db.session.commit()
     cache.delete("admin_dashboard_stats")
     cache.clear()
-    return jsonify({"message": "drive rejected", "drive": drive.to_dict()})
+    return jsonify({"message": "Drive got rejected!", "drive": drive.to_dict()})
 
 
 @admin_bp.get("/drives/<int:drive_id>")
@@ -170,9 +170,8 @@ def list_placements():
 @admin_bp.get("/search/companies")
 @login_required
 @role_required("admin")
-@cache.cached(timeout=30, query_string=True)
+@cache.cached(timeout=30, query_string=True) #redis bit for admin
 def search_companies():
-    """Search companies by name or industry."""
     q = (request.args.get("q") or "").strip()
     if not q:
         return jsonify([c.to_dict() for c in CompanyProfile.query.all()])

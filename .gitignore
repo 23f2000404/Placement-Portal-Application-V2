@@ -34,3 +34,29 @@ instance/
 *.db
 *.sqlite
 *.sqlite3
+
+# Redis & Celery
+dump.rdb
+celerybeat-schedule
+
+# Uploads & Exports
+backend/uploads/
+backend/exports/
+
+# IDE & editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Misc
+.pytest_cache/
+.coverage
+htmlcov/

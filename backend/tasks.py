@@ -226,7 +226,7 @@ def generate_company_monthly_reports():
 def export_applications_csv_task(student_id):
     student = StudentProfile.query.get(student_id)
     if not student:
-        raise ValueError("student not found")
+        raise ValueError("Student not found!")
 
     export_dir = current_app.config["EXPORT_FOLDER"]
     os.makedirs(export_dir, exist_ok=True)
@@ -258,7 +258,7 @@ def export_applications_csv_task(student_id):
 def export_company_applications_csv_task(company_id):
     company = CompanyProfile.query.get(company_id)
     if not company:
-        raise ValueError("company not found")
+        raise ValueError("Company not found!")
 
     export_dir = current_app.config["EXPORT_FOLDER"]
     os.makedirs(export_dir, exist_ok=True)

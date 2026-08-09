@@ -50,17 +50,17 @@ def list_own_drives():
 def create_drive():
     company = _get_company_or_404()
     if company.approval_status != "approved":
-        return jsonify({"error": "company must be approved by admin before creating drives"}), 403
+        return jsonify({"error": "Company must be approved by admin before they can create drives"}), 403
 
     data = request.get_json(force=True) or {}
     required = ("job_title", "application_deadline")
     if not all(data.get(f) for f in required):
-        return jsonify({"error": f"required fields: {required}"}), 400
+        return jsonify({"error": f"Required fields: {required}"}), 400
 
     try:
         deadline = datetime.strptime(data["application_deadline"], "%Y-%m-%d").date()
     except ValueError:
-        return jsonify({"error": "application_deadline must be YYYY-MM-DD"}), 400
+        return jsonify({"error": "Application_deadline must be in YYYY-MM-DD format"}), 400
 
     drive = PlacementDrive(
         company_id=company.id,
@@ -80,7 +80,7 @@ def create_drive():
     db.session.add(drive)
     db.session.commit()
     cache.clear()
-    return jsonify({"message": "drive created, pending admin approval", "drive": drive.to_dict()}), 201
+    return jsonify({"message": "Drive created, pending admin approval..", "drive": drive.to_dict()}), 201
 
 
 @company_bp.post("/drives/<int:drive_id>/complete")
@@ -92,7 +92,7 @@ def mark_drive_complete(drive_id):
     drive.status = "closed"
     db.session.commit()
     cache.clear()
-    return jsonify({"message": "drive marked as complete", "drive": drive.to_dict()})
+    return jsonify({"message": "Drive marked as complete!", "drive": drive.to_dict()})
 
 
 @company_bp.get("/drives/<int:drive_id>/applications")
@@ -112,10 +112,10 @@ def download_applicant_resume(application_id):
     company = _get_company_or_404()
     application = Application.query.get_or_404(application_id)
     if application.drive.company_id != company.id:
-        return jsonify({"error": "forbidden"}), 403
+        return jsonify({"error": "Forbidden!"}), 403
     student = application.student
     if not student or not student.resume_filename:
-        return jsonify({"error": "this student hasn't uploaded a resume"}), 404
+        return jsonify({"error": "This student hasn't uploaded a resume."}), 404
     return send_from_directory(current_app.config["UPLOAD_FOLDER"], student.resume_filename, as_attachment=True)
 
 @company_bp.post("/applications/<int:application_id>/status")
@@ -125,12 +125,12 @@ def update_application_status(application_id):
     company = _get_company_or_404()
     application = Application.query.get_or_404(application_id)
     if application.drive.company_id != company.id:
-        return jsonify({"error": "forbidden"}), 403
+        return jsonify({"error": "Forbidden!"}), 403
 
     data = request.get_json(force=True) or {}
     new_status = data.get("status")
     if new_status not in APPLICATION_STATUSES:
-        return jsonify({"error": f"invalid status, must be one of {APPLICATION_STATUSES}"}), 400
+        return jsonify({"error": f"Invalid status, must be one of {APPLICATION_STATUSES}"}), 400
 
     application.status = new_status
     application.remark = data.get("remark", application.remark)
@@ -159,7 +159,7 @@ def update_application_status(application_id):
 
     db.session.commit()
     cache.clear()
-    return jsonify({"message": "status updated", "application": application.to_dict()})
+    return jsonify({"message": "Status updated.", "application": application.to_dict()})
 
 
 @company_bp.post("/applications/<int:application_id>/schedule-interview")
@@ -169,22 +169,22 @@ def schedule_interview(application_id):
     company = _get_company_or_404()
     application = Application.query.get_or_404(application_id)
     if application.drive.company_id != company.id:
-        return jsonify({"error": "forbidden"}), 403
+        return jsonify({"error": "Forbidden!"}), 403
 
     data = request.get_json(force=True) or {}
     interview_date_raw = data.get("interview_date")  # expects "YYYY-MM-DDTHH:MM"
     if not interview_date_raw:
-        return jsonify({"error": "interview_date is required"}), 400
+        return jsonify({"error": "Interview_date is required"}), 400
     try:
         interview_date = datetime.strptime(interview_date_raw, "%Y-%m-%dT%H:%M")
     except ValueError:
-        return jsonify({"error": "interview_date must be in 'YYYY-MM-DDTHH:MM' format"}), 400
+        return jsonify({"error": "Interview_date must be in 'YYYY-MM-DDTHH:MM' format"}), 400
 
     application.interview_date = interview_date
     application.interview_mode = data.get("interview_mode", "Online")
     application.status = "interview"
     db.session.commit()
-    return jsonify({"message": "interview scheduled", "application": application.to_dict()})
+    return jsonify({"message": "Interview scheduled~", "application": application.to_dict()})
 
 
 @company_bp.post("/export-csv")
@@ -195,7 +195,7 @@ def export_csv():
     from tasks import export_company_applications_csv_task
     company = _get_company_or_404()
     task = export_company_applications_csv_task.delay(company.id)
-    return jsonify({"message": "export started", "task_id": task.id}), 202
+    return jsonify({"message": "Export has started, please wait..", "task_id": task.id}), 202
 
 
 @company_bp.get("/export-status/<task_id>")

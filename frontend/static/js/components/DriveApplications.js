@@ -26,7 +26,7 @@ const DriveApplications = {
               <td>{{ a.student_name }}</td>
               <td><span class="badge" :class="'badge-' + a.status">{{ a.status }}</span></td>
               <td class="small text-muted">   
-                {# Interview date looks weird so I sliced it up manually to get YYYY-MM-DD HH:MM format teehee :D #}
+                <!-- Interview date looks weird so I sliced it up manually to get YYYY-MM-DD HH:MM format teehee :D -->
                 <template v-if="a.interview_date">{{ a.interview_date.slice(0,16).replace('T',' ') }} ({{ a.interview_mode }})</template>
                 <template v-else>-</template>
               </td>

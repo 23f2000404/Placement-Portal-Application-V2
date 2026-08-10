@@ -74,6 +74,3 @@ celery -A celery_worker.celery worker --loglevel=info
 celery -A celery_worker.celery beat --loglevel=info
 ```
 
-> If you don't configure `MAIL_SERVER` / `GCHAT_WEBHOOK_URL` env vars, reminder and
-> report jobs simply log what would have been sent to the console/log — everything
-> still runs end-to-end for a local demo without real credentials.

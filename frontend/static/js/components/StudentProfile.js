@@ -1,6 +1,6 @@
 const StudentProfile = {
   data() {
-    return { profile: {}, resumeFile: null, 
+    return { profile: {}, resumeFile: null, departments: DEPARTMENTS,
     error: "", success: "", loading: true };
   },
   async mounted() {
@@ -17,7 +17,9 @@ const StudentProfile = {
             <input v-model="profile.name" class="form-control" required /></div>
           <div class="row">
             <div class="col mb-3"><label class="form-label">Department</label>
-              <input v-model="profile.department" class="form-control" /></div>
+              <select v-model="profile.department" class="form-control">
+                <option v-for="d in departments" :key="d" :value="d">{{ d }}</option>
+              </select></div>
             <div class="col mb-3"><label class="form-label">CGPA</label>
               <input v-model="profile.cgpa" type="number" step="0.01" class="form-control" /></div>
           </div>

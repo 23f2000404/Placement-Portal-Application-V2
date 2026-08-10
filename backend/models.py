@@ -85,17 +85,18 @@ class StudentProfile(db.Model):
     __tablename__ = "student_profiles"
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)  # one-to-one w User
     name = db.Column(db.String(120), nullable=False)
     department = db.Column(db.String(120))
-    skills = db.Column(db.String(255))
+    skills = db.Column(db.String(255)) # just comma-sep string here, no need for its own table
     cgpa = db.Column(db.Float, default=0.0)
     year = db.Column(db.Integer) #grad yr
     phone = db.Column(db.String(20))
-    resume_filename = db.Column(db.String(255))
+    resume_filename = db.Column(db.String(255)) #they're stored in upload folder
 
     applications = db.relationship("Application", backref="student", cascade="all, delete-orphan")
     placements = db.relationship("Placement", backref="student", cascade="all, delete-orphan")
+    # deleted a student so their apps/placements have to go too, didn't want orphaned rows floating around
 
     def to_dict(self):
         return {

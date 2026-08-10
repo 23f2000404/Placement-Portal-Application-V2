@@ -1,4 +1,5 @@
 import os
+from datetime import date
 from flask import Blueprint, request, jsonify, current_app, send_from_directory
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
@@ -71,7 +72,8 @@ def download_own_resume():
 @student_bp.get("/drives")
 @login_required
 @role_required("student")
-@cache.cached(timeout=30, query_string=True)
+@cache.cached(timeout=30, query_string=True,
+               unless=lambda: request.args.get("eligible_only") == "true")
 def list_available_drives():
 
     q = (request.args.get("q") or "").strip()
@@ -99,7 +101,7 @@ def list_available_drives():
 def _is_eligible(student, drive):
     if drive.eligibility_cgpa and student.cgpa < drive.eligibility_cgpa:
         return False
-    if drive.eligibility_year and student.year and drive.eligibility_year != student.year:
+    if drive.eligibility_year and drive.eligibility_year != student.year:
         return False
     if drive.eligibility_branch and drive.eligibility_branch.lower() != "any":
         branches = [b.strip().lower() for b in drive.eligibility_branch.split(",")]
@@ -112,8 +114,11 @@ def _is_eligible(student, drive):
 @login_required
 @role_required("student")
 def drive_detail(drive_id):
-    drive = PlacementDrive.query.get_or_404(drive_id)
-    return jsonify(drive.to_dict())
+    drive = PlacementDrive.query.filter_by(id=drive_id, status="approved").first_or_404()
+    student = _get_student_or_404()
+    data = drive.to_dict()
+    data["applied"] = Application.query.filter_by(student_id=student.id, drive_id=drive.id).first() is not None
+    return jsonify(data)
 
 
 @student_bp.post("/drives/<int:drive_id>/apply")
@@ -125,6 +130,9 @@ def apply_to_drive(drive_id):
 
     if drive.status != "approved":
         return jsonify({"error": "This drive is not open for applications"}), 400
+
+    if drive.application_deadline and drive.application_deadline < date.today():
+        return jsonify({"error": "The application deadline for this drive has passed"}), 400
 
     existing = Application.query.filter_by(student_id=student.id, drive_id=drive.id).first()
     if existing:
@@ -180,6 +188,7 @@ def my_placements():
 @role_required("student")
 def download_offer_letter(application_id):
     from flask import Response
+    from markupsafe import escape
     student = _get_student_or_404()
     application = Application.query.filter_by(id=application_id, student_id=student.id).first_or_404()
 
@@ -193,18 +202,21 @@ def download_offer_letter(application_id):
     title = "Placement Confirmation" if application.status == "placed" else "Offer Letter"
     salary = (placement.salary if placement else drive.salary) or "As discussed"
     joining = placement.joining_date.isoformat() if placement and placement.joining_date else "To be communicated"
-    position = (placement.position if placement else None) or drive.job_title
+    position = escape((placement.position if placement else None) or drive.job_title)
+    student_name = escape(student.name)
+    company_name = escape(company.company_name)
+    location = escape(drive.location) if drive.location else "N/A"
 
     html = f"""
     <html><body style="font-family: Arial, sans-serif; padding: 40px; color:#2e1065;">
       <h1 style="color:#7c3aed;">{title}</h1>
-      <p>Dear {student.name},</p>
+      <p>Dear {student_name},</p>
       <p>We are pleased to inform you that you have been {application.status} for the position of
-         <b>{position}</b> at <b>{company.company_name}</b> through the Placement Portal.</p>
+         <b>{position}</b> at <b>{company_name}</b> through the Placement Portal.</p>
       <table cellpadding="6">
         <tr><td><b>Position</b></td><td>{position}</td></tr>
-        <tr><td><b>Company</b></td><td>{company.company_name}</td></tr>
-        <tr><td><b>Location</b></td><td>{drive.location or 'N/A'}</td></tr>
+        <tr><td><b>Company</b></td><td>{company_name}</td></tr>
+        <tr><td><b>Location</b></td><td>{location}</td></tr>
         <tr><td><b>Salary</b></td><td>{salary}</td></tr>
         <tr><td><b>Joining Date</b></td><td>{joining}</td></tr>
       </table>
@@ -248,4 +260,7 @@ def export_status(task_id):
 @login_required
 @role_required("student")
 def export_download(filename):
+    student = _get_student_or_404()
+    if not filename.startswith(f"applications_student_{student.id}_"):
+        return jsonify({"error": "Forbidden!"}), 403
     return send_from_directory(current_app.config["EXPORT_FOLDER"], filename, as_attachment=True)

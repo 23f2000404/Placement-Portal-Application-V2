@@ -5,6 +5,7 @@ const Register = {
       role: "student",
       username: "", password: "", email: "",
       name: "", department: "", skills: "", cgpa: "", year: "", phone: "",
+      departments: DEPARTMENTS,
       company_name: "", industry: "", hr_contact: "", hr_email: "", website: "", location: "", description: "",
       error: "", success: "", loading: false,
     };
@@ -40,7 +41,10 @@ const Register = {
               <input v-model="name" class="form-control" required /></div>
             <div class="row">
               <div class="col mb-3"><label class="form-label">Department</label>
-                <input v-model="department" class="form-control" placeholder="e.g. Computer Science" required /></div>
+                <select v-model="department" class="form-control" required>
+                  <option value="" disabled>Select department</option>
+                  <option v-for="d in departments" :key="d" :value="d">{{ d }}</option>
+                </select></div>
               <div class="col mb-3"><label class="form-label">CGPA</label>
                 <input v-model="cgpa" type="number" step="0.01" class="form-control" required/></div>
             </div>
@@ -48,7 +52,7 @@ const Register = {
               <div class="col mb-3"><label class="form-label">Graduation Year</label>
                 <input v-model="year" type="number" class="form-control" required/></div>
               <div class="col mb-3"><label class="form-label">Phone</label>
-                <input v-model="phone" class="form-control" required/></div>
+                <input  v-model="phone"  type="tel"  class="form-control" pattern="[0-9]{10}" maxlength="10" minlength="10" required/></div>
             </div>
             <div class="mb-3"><label class="form-label">Skills</label>
               <input v-model="skills" class="form-control" placeholder="e.g. Python, React, SQL" /></div>

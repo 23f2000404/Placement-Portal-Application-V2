@@ -67,7 +67,7 @@ def blacklist_company(company_id):
     
     if user.is_blacklisted:
         for drive in company.drives:
-            drive.status = "closed"
+            drive.status = "closed" #existing drives will be closed, if toggled off then they'll get to post drives again
     db.session.commit()
     cache.delete("admin_dashboard_stats")
     cache.clear()
@@ -141,7 +141,7 @@ def reject_drive(drive_id):
     db.session.commit()
     cache.delete("admin_dashboard_stats")
     cache.clear()
-    return jsonify({"message": "Drive got rejected!", "drive": drive.to_dict()})
+    return jsonify({"message": "Drive got rejected!", "drive": drive.to_dict()})#admin drive reject kore diyeche
 
 
 @admin_bp.get("/drives/<int:drive_id>")
@@ -199,11 +199,10 @@ def search_students():
     students = StudentProfile.query.filter(db.or_(*filters)).all()
     return jsonify([s.to_dict() for s in students])
 
-@admin_bp.get("/search")
+@admin_bp.get("/search")  #this is unused by api since we've split it.. but hey in caseee I use postman ob it later i can
 @login_required
 @role_required("admin")
-def search():
-
+def search(): # I won't be able to access this using UI
     q = (request.args.get("q") or "").strip()
     if not q:
         return jsonify({"companies": [], "students": []})

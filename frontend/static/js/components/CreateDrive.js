@@ -2,7 +2,8 @@ const CreateDrive = {
   data() {
     return {
       job_title: "", job_description: "", skills_required: "", experience_required: "", benefits: "",
-      eligibility_branch: "Any", eligibility_cgpa: "", eligibility_year: "", 
+      anyBranch: true, selectedDepartments: [], departments: DEPARTMENTS,
+      eligibility_cgpa: "", eligibility_year: "", 
       salary: "", location: "", application_deadline: "", error: "", success: "", loading: false,
     };
   },
@@ -33,8 +34,17 @@ const CreateDrive = {
           </div>
           <div class="mb-3">
             <label class="form-label">Eligibility Criteria</label>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" v-model="anyBranch" id="anyBranch">
+              <label class="form-check-label" for="anyBranch">Open to all branches</label>
+            </div>
+            <div v-if="!anyBranch" class="d-flex flex-wrap gap-3 mt-2 mb-2">
+              <div class="form-check" v-for="d in departments" :key="d">
+                <input class="form-check-input" type="checkbox" :value="d" v-model="selectedDepartments" :id="'dept-' + d">
+                <label class="form-check-label" :for="'dept-' + d">{{ d }}</label>
+              </div>
+            </div>
             <div class="row g-2">
-              <div class="col"><input v-model="eligibility_branch" class="form-control" placeholder="Branch (or 'Any')" /></div>
               <div class="col"><input v-model="eligibility_cgpa" type="number" step="0.1" class="form-control" placeholder="Min CGPA" /></div>
               <div class="col"><input v-model="eligibility_year" type="number" class="form-control" placeholder="Grad Year" /></div>
             </div>
@@ -57,7 +67,12 @@ const CreateDrive = {
   `,
   methods: {
     async submit() {
-      this.error = ""; this.success = ""; this.loading = true;
+      this.error = ""; this.success = "";
+      if (!this.anyBranch && this.selectedDepartments.length === 0) {
+        this.error = "Select at least one branch, or check 'Open to all branches'.";
+        return;
+      }
+      this.loading = true;
       try {
         await Api.post("/api/company/drives", {
           job_title: this.job_title,
@@ -65,7 +80,7 @@ const CreateDrive = {
           skills_required: this.skills_required, 
           experience_required: this.experience_required,
           benefits: this.benefits,
-          eligibility_branch: this.eligibility_branch, 
+          eligibility_branch: this.anyBranch ? "Any" : this.selectedDepartments.join(","), 
           eligibility_cgpa: this.eligibility_cgpa,
           eligibility_year: this.eligibility_year, 
           salary: this.salary,

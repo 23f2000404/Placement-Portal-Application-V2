@@ -49,8 +49,8 @@ def list_own_drives():
 @role_required("company")
 def create_drive():
     company = _get_company_or_404()
-    if company.approval_status != "approved":
-        return jsonify({"error": "Company must be approved by admin before they can create drives"}), 403
+    if company.approval_status != "approved" or company.user.is_blacklisted:
+        return jsonify({"error": "Company must be an approved, active member before they can create drives"}), 403
 
     data = request.get_json(force=True) or {}
     required = ("job_title", "application_deadline")
@@ -61,6 +61,8 @@ def create_drive():
         deadline = datetime.strptime(data["application_deadline"], "%Y-%m-%d").date()
     except ValueError:
         return jsonify({"error": "Application_deadline must be in YYYY-MM-DD format"}), 400
+    if deadline < datetime.utcnow().date():
+        return jsonify({"error": "Application deadline cannot be in the past"}), 400
 
     drive = PlacementDrive(
         company_id=company.id,
@@ -83,7 +85,7 @@ def create_drive():
     return jsonify({"message": "Drive created, pending admin approval..", "drive": drive.to_dict()}), 201
 
 
-@company_bp.post("/drives/<int:drive_id>/complete")
+@company_bp.post("/drives/<int:drive_id>/complete") #this closes a drive after placments are done or whnvr comp prefers
 @login_required
 @role_required("company")
 def mark_drive_complete(drive_id):
@@ -111,7 +113,7 @@ def download_applicant_resume(application_id):
     from flask import send_from_directory, current_app
     company = _get_company_or_404()
     application = Application.query.get_or_404(application_id)
-    if application.drive.company_id != company.id:
+    if application.drive.company_id != company.id: #some mismatch or injection type scenario - securityy thakche
         return jsonify({"error": "Forbidden!"}), 403
     student = application.student
     if not student or not student.resume_filename:
@@ -133,8 +135,8 @@ def update_application_status(application_id):
         return jsonify({"error": f"Invalid status, must be one of {APPLICATION_STATUSES}"}), 400
 
     application.status = new_status
-    application.remark = data.get("remark", application.remark)
-    application.feedback = data.get("feedback", application.feedback)
+    application.remark = data.get("remark", application.remark) #optional but for notes companies may prefer having it
+    application.feedback = data.get("feedback", application.feedback) #to sent to college later, will help in improvement next drive me
 
     if new_status == "placed":
         existing = Placement.query.filter_by(application_id=application.id).first()
@@ -162,7 +164,7 @@ def update_application_status(application_id):
     return jsonify({"message": "Status updated.", "application": application.to_dict()})
 
 
-@company_bp.post("/applications/<int:application_id>/schedule-interview")
+@company_bp.post("/applications/<int:application_id>/schedule-interview") #this directly sets status to interview on scheduling one, cute feature
 @login_required
 @role_required("company")
 def schedule_interview(application_id):
@@ -195,8 +197,8 @@ def export_csv():
     from tasks import export_company_applications_csv_task
     company = _get_company_or_404()
     task = export_company_applications_csv_task.delay(company.id)
-    return jsonify({"message": "Export has started, please wait..", "task_id": task.id}), 202
-
+    return jsonify({"message": "Export has started, please wait..", "task_id": task.id}), 202  # starts the csv build as a celery task instead of doing it inline so the req doesn't hang, it returns a task_id, frontend polls export_status with it
+    
 
 @company_bp.get("/export-status/<task_id>")
 @login_required
@@ -211,10 +213,14 @@ def export_status(task_id):
         response["error"] = str(task.info)
     return jsonify(response)
 
+   
 
 @company_bp.get("/export-download/<path:filename>")
 @login_required
 @role_required("company")
-def export_download(filename):
+def export_download(filename): # gives the file once export_status says it's ready :>
     from flask import send_from_directory, current_app
+    company = _get_company_or_404()
+    if not filename.startswith(f"applications_company_{company.id}_"):
+        return jsonify({"error": "Forbidden!"}), 403
     return send_from_directory(current_app.config["EXPORT_FOLDER"], filename, as_attachment=True)

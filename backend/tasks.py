@@ -8,6 +8,8 @@ from email.mime.multipart import MIMEMultipart
 
 import requests
 from flask import current_app
+from markupsafe import escape
+#trying to prevent injection of html data thru text boxes.. secuuurity
 
 from extensions import celery, db
 from models import StudentProfile, PlacementDrive, Application, CompanyProfile, Placement
@@ -16,13 +18,14 @@ logger = logging.getLogger("placement_portal.tasks")
 logging.basicConfig(level=logging.INFO) #fall back: console logging
 
 #jobs - scheduled(reminders and reports), user-trigg(exports) 
+#explicit task names : helps me stay sane lol
 
 # Notification helpers
 
 def _send_gchat_message(text):
     webhook = current_app.config.get("GCHAT_WEBHOOK_URL")
     if not webhook:
-        logger.info("[GCHAT-SIM] %s", text)
+        logger.info("[GCHAT-SIM] %s", text) #we're gonna be using this in demos
         return
     try:
         requests.post(webhook, json={"text": text}, timeout=5)
@@ -68,17 +71,22 @@ def send_daily_reminders():
         logger.info("No drives closing in the next 3 days. No reminders sent.")
         return {"reminders_sent": 0}
 
-    students = StudentProfile.query.all()
+    students = StudentProfile.query.all() #aye this loops literally every student, no filter by dept/drive eligibility checked
+    # rn its fine for our scale but would need pagination/filtering if this grows
     count = 0
     for student in students:
         already_applied_ids = {a.drive_id for a in student.applications}
         relevant = [d for d in drives if d.id not in already_applied_ids]
         if not relevant:
             continue
-        lines = "\n".join(
-            f"- {d.job_title} ({d.company.company_name}) closes on {d.application_deadline}"
-            for d in relevant
-        )
+        lines = []
+        for d in relevant:
+            lines.append(
+                f"- {d.job_title} ({d.company.company_name}) closes on {d.application_deadline}"
+            )
+
+        lines = "\n".join(lines)        
+
         text = (f"Hi {student.name}, you have {len(relevant)} placement drive(s) closing soon:\n{lines}\n"
                 f"Log in to the Placement Portal to apply before the deadline.")
         _send_gchat_message(text)
@@ -126,7 +134,7 @@ def _month_bounds():
 
 @celery.task(name="tasks.generate_monthly_report")
 def generate_monthly_report():
-
+    # admin's copy of the report — company version is right below, basically twins
     first_of_last_month, first_of_this_month = _month_bounds()
 
     drives_last_month = PlacementDrive.query.filter(
@@ -154,7 +162,7 @@ def generate_monthly_report():
       <h3>Drives</h3>
       <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;">
         <tr style="background:#ede9fe;"><th>Job Title</th><th>Company</th><th>Status</th></tr>
-        {''.join(f"<tr><td>{d.job_title}</td><td>{d.company.company_name}</td><td>{d.status}</td></tr>" for d in drives_last_month)}
+        {''.join(f"<tr><td>{escape(d.job_title)}</td><td>{escape(d.company.company_name)}</td><td>{d.status}</td></tr>" for d in drives_last_month)}
       </table>
     </body></html>
     """
@@ -199,7 +207,7 @@ def generate_company_monthly_reports():
 
         html = f"""
         <html><body style="font-family: Arial, sans-serif; color:#333;">
-          <h2 style="color:#7c3aed;">{company.company_name} - Monthly Placement Report ({month_label})</h2>
+          <h2 style="color:#7c3aed;">{escape(company.company_name)} - Monthly Placement Report ({month_label})</h2>
           <p><b>Total applications received:</b> {len(applications)}</p>
           <p><b>Students placed:</b> {len(placements)}</p>
           <h3>Application status breakdown</h3>
@@ -279,6 +287,7 @@ def export_company_applications_csv_task(company_id):
                 a.application_date.strftime("%Y-%m-%d") if a.application_date else "",
             ])
 
-    _send_gchat_message(f"Hi {company.company_name}, your application history export is ready: {filename}")
+    # below is what tells the student to go poll export-status, cuz ur file's reeeadyy
+    _send_gchat_message(f"Hi {company.company_name}, your application history export is ready: {filename}") 
     logger.info("CSV export ready for company %s: %s", company_id, filename)
     return {"filename": filename, "download_url": f"/api/company/export-download/{filename}"}

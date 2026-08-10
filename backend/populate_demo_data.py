@@ -1,7 +1,9 @@
 from app import create_app
 from extensions import db
 from models import User, CompanyProfile, StudentProfile, PlacementDrive, Application
-from datetime import date
+from datetime import date, timedelta
+
+TODAY = date.today()
 
 app = create_app()
 with app.app_context():
@@ -50,19 +52,19 @@ with app.app_context():
 
     students = [
         StudentProfile(
-            user_id=student_users[0].id, name="Priya Sharma", department="Computer Science",
+            user_id=student_users[0].id, name="Priya Sharma", department="CSE",
             skills="Python, SQL, React", cgpa=8.2, year=2026, phone="9876543210"
         ),
         StudentProfile(
-            user_id=student_users[1].id, name="Raj Patel", department="Information Technology",
+            user_id=student_users[1].id, name="Raj Patel", department="IT",
             skills="Java, Spring Boot, MySQL", cgpa=7.9, year=2026, phone="9876543211"
         ),
         StudentProfile(
-            user_id=student_users[2].id, name="Anjali Kumar", department="Computer Science",
+            user_id=student_users[2].id, name="Anjali Kumar", department="CSE",
             skills="Python, ML, TensorFlow", cgpa=8.5, year=2026, phone="9876543212"
         ),
         StudentProfile(
-            user_id=student_users[3].id, name="Arjun Singh", department="Information Technology",
+            user_id=student_users[3].id, name="Arjun Singh", department="IT",
             skills="C++, Data Structures, JavaScript", cgpa=7.5, year=2026, phone="9876543213"
         ),
     ]
@@ -76,27 +78,27 @@ with app.app_context():
             job_description="Build scalable backend systems.",
             skills_required="Python, Go, Docker", experience_required="Fresher",
             benefits="Health insurance, relocation, stock options",
-            eligibility_branch="Computer Science,Information Technology", eligibility_cgpa=7.5, eligibility_year=2026,
+            eligibility_branch="CSE,IT", eligibility_cgpa=7.5, eligibility_year=2026,
             salary=1500000, location="Bangalore",
-            application_deadline=date(2026, 1, 30), status="approved"
+            application_deadline=TODAY + timedelta(days=15), status="approved"
         ),
         PlacementDrive(
             company_id=companies[0].id, job_title="Data Scientist",
             job_description="Analyze complex datasets, build ML models.",
             skills_required="Python, SQL, TensorFlow", experience_required="2+ years",
             benefits="Stock options, remote work",
-            eligibility_branch="Computer Science,Information Technology", eligibility_cgpa=8.0, eligibility_year=2026,
+            eligibility_branch="CSE,IT", eligibility_cgpa=8.0, eligibility_year=2026,
             salary=1200000, location="Bangalore",
-            application_deadline=date(2026, 2, 28), status="approved"
+            application_deadline=TODAY + timedelta(days=30), status="approved"
         ),
         PlacementDrive(
             company_id=companies[2].id, job_title="Backend Developer",
             job_description="Develop REST APIs, microservices.",
             skills_required="Java, Spring Boot, MySQL", experience_required="1+ years",
             benefits="Health insurance",
-            eligibility_branch="Information Technology", eligibility_cgpa=7.0, eligibility_year=2026,
+            eligibility_branch="IT", eligibility_cgpa=7.0, eligibility_year=2026,
             salary=1000000, location="Pune",
-            application_deadline=date(2026, 3, 15), status="approved"
+            application_deadline=TODAY + timedelta(days=45), status="approved"
         ),
     ]
     for d in drives:
